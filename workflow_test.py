@@ -1,4 +1,5 @@
 from basic_workflow import chain, parallel, route
+from orchestrator_workers_workflow import FlexibleOrchestrator
 import pytest
 
 def test_chain():
@@ -169,3 +170,59 @@ def test_route():
         print("-" * 40)
         response = route(ticket, support_routes)
         print(response)
+
+def test_orchestrator_workers():
+    """
+    # Example 4: Orchestrator and Workers workflow for task decomposition and execution
+    # Break down tasks and run them in parallel using worker LLMs
+    """
+    ORCHESTRATOR_PROMPT = """
+    Analyze this task and break it down into 2-3 distinct approaches:
+
+    Task: {task}
+
+    Return your response in this format:
+
+    <analysis>
+    Explain your understanding of the task and which variations would be valuable.
+    Focus on how each approach serves different aspects of the task.
+    </analysis>
+
+    <tasks>
+        <task>
+        <type>formal</type>
+        <description>Write a precise, technical version that emphasizes specifications</description>
+        </task>
+        <task>
+        <type>conversational</type>
+        <description>Write an engaging, friendly version that connects with readers</description>
+        </task>
+    </tasks>
+    """
+
+    WORKER_PROMPT = """
+    Generate content based on:
+    Task: {original_task}
+    Style: {task_type}
+    Guidelines: {task_description}
+
+    Return your response in this format:
+
+    <response>
+    Your content here, maintaining the specified style and fully addressing requirements.
+    </response>
+    """
+
+    orchestrator = FlexibleOrchestrator(
+        orchestrator_prompt=ORCHESTRATOR_PROMPT,
+        worker_prompt=WORKER_PROMPT,
+    )
+
+    results = orchestrator.process(
+        task="Write a product description for a new eco-friendly water bottle",
+        context={
+            "target_audience": "environmentally conscious millennials",
+            "key_features": ["plastic-free", "insulated", "lifetime warranty"]
+        }
+    )
+    print(results)
