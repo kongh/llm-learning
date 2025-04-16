@@ -1,5 +1,6 @@
 from basic_workflow import chain, parallel, route
 from orchestrator_workers_workflow import FlexibleOrchestrator
+from evaluator_optimizer_workflow import loop
 import pytest
 
 def test_chain():
@@ -226,3 +227,48 @@ def test_orchestrator_workers():
         }
     )
     print(results)
+
+
+def test_evalutor_optimizer():
+    evaluator_prompt = """
+    Evaluate this following code implementation for:
+    1. code correctness
+    2. time complexity
+    3. style and best practices
+
+    You should be evaluating only and not attemping to solve the task.
+    Only output "PASS" if all criteria are met and you have no further suggestions for improvements.
+    Output your evaluation concisely in the following format.
+
+    <evaluation>PASS, NEEDS_IMPROVEMENT, or FAIL</evaluation>
+    <feedback>
+    What needs improvement and why.
+    </feedback>
+    """
+
+    generator_prompt = """
+    Your goal is to complete the task based on <user input>. If there are feedback 
+    from your previous generations, you should reflect on them to improve your solution
+
+    Output your answer concisely in the following format: 
+
+    <thoughts>
+    [Your understanding of the task and feedback and how you plan to improve]
+    </thoughts>
+
+    <response>
+    [Your code implementation here]
+    </response>
+    """
+
+    task = """
+    <user input>
+    Implement a Stack with:
+    1. push(x)
+    2. pop()
+    3. getMin()
+    All operations should be O(1).
+    </user input>
+    """
+
+    loop(task, evaluator_prompt, generator_prompt)
