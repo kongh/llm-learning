@@ -76,29 +76,40 @@ class Agent:
             self.history.truncate()
             params = self._prepare_api_params()
 
-            response = self.client.chat.completions.create(**params)
-            tool_calls = [
-                block for block in response.content if block.type == "tool_use"
-            ]
+            completion = self.client.chat.completions.create(**params)
+            
+            output = completion.model_dump()
+            response = output["choices"][0]["message"]
+            if  response['content'] is None:
+                response['content'] = ""
 
-            if self.verbose:
-                for block in response.content:
-                    if block.type == "text":
-                        print(f"\n[{self.name}] Output: {block.text}")
-                    elif block.type == "tool_use":
-                        params_str = ", ".join(
-                            [f"{k}={v}" for k, v in block.input.items()]
-                        )
-                        print(
-                            f"\n[{self.name}] Tool call: "
-                            f"{block.name}({params_str})"
-                        )
+            print(response)
+            tool_calls = response["tool_calls"]
 
-            await self.history.add_message(
-                "assistant", response.content, response.usage
-            )
+            # 如果不需要调用工具，则直接返回最终答案
+            if response['tool_calls'] == None:  # 如果模型判断无需调用工具，则将assistant的回复直接打印出来，无需进行模型的第二轮调用
+                print(f"无需调用工具，我可以直接回复：{response['content']}")
+                return
 
-            if tool_calls:
+            # if self.verbose:
+            #     for block in response.content:
+            #         if block.type == "text":
+            #             print(f"\n[{self.name}] Output: {block.text}")
+            #         elif block.type == "tool_use":
+            #             params_str = ", ".join(
+            #                 [f"{k}={v}" for k, v in block.input.items()]
+            #             )
+            #             print(
+            #                 f"\n[{self.name}] Tool call: "
+            #                 f"{block.name}({params_str})"
+            #             )
+
+            # await self.history.add_message(
+            #     "assistant", response.content, response.usage
+            # )
+
+            if tool_calls is not None:
+                print(tool_calls)
                 tool_results = await execute_tools(
                     tool_calls,
                     tool_dict,

@@ -15,9 +15,12 @@ class Tool:
     def to_dict(self) -> dict[str, Any]:
         """Convert tool to Claude API format."""
         return {
-            "name": self.name,
-            "description": self.description,
-            "input_schema": self.input_schema,
+            "type": "function",
+            "function": {
+                "name": self.name,
+                "description": self.description,
+                "parameters": self.input_schema,
+            },
         }
 
     async def execute(self, **kwargs) -> str:
